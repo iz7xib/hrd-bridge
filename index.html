@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HRD Bridge</title>
+<style>
+:root {
+  --bg:#0e1117;--bg2:#161b27;--bg3:#1e2535;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --text:#e8edf5;--muted:#7a8499;--accent:#3b82f6;--green:#10b981;
+  --warn:#f59e0b;--danger:#ef4444;--wsjtx:#8b5cf6;--n1mm:#06b6d4;
+  --sidebar-w:240px;--header-h:56px;--radius:8px;--radius-lg:12px;
+  --mono:'JetBrains Mono','Courier New',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',-apple-system,system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;min-height:100vh;overflow-x:hidden;}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:199;opacity:0;pointer-events:none;transition:opacity .25s;}
+.overlay.show{opacity:1;pointer-events:all;}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:var(--sidebar-w);background:var(--bg2);border-right:1px solid var(--border);z-index:200;display:flex;flex-direction:column;transform:translateX(-100%);transition:transform .25s cubic-bezier(.4,0,.2,1);}
+.sidebar.open{transform:translateX(0);}
+.sidebar-logo{height:var(--header-h);display:flex;align-items:center;gap:10px;padding:0 20px;border-bottom:1px solid var(--border);font-size:16px;font-weight:600;letter-spacing:-.3px;flex-shrink:0;}
+.sidebar-logo span{color:var(--accent);}
+.sidebar-nav{flex:1;padding:12px 8px;overflow-y:auto;}
+.nav-section{font-size:10px;text-transform:uppercase;letter-spacing:.9px;color:var(--muted);padding:8px 12px 4px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--radius);cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);transition:all .15s;margin-bottom:2px;border:none;background:none;width:100%;text-align:left;}
+.nav-item:hover{background:var(--bg3);color:var(--text);}
+.nav-item.active{background:rgba(59,130,246,.15);color:var(--accent);}
+.nav-item i{font-size:18px;flex-shrink:0;}
+.sidebar-footer{padding:12px 8px;border-top:1px solid var(--border);}
+.hrd-pill{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:var(--radius);background:var(--bg3);font-size:12px;color:var(--muted);}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--danger);flex-shrink:0;}
+.dot.ok{background:var(--green);box-shadow:0 0 6px rgba(16,185,129,.5);}
+.header{position:fixed;top:0;left:0;right:0;height:var(--header-h);background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;padding:0 20px;z-index:100;}
+.hamburger{width:36px;height:36px;border-radius:var(--radius);border:1px solid var(--border2);background:none;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s;}
+.hamburger:hover{background:var(--bg3);}
+.header-title{font-size:15px;font-weight:600;letter-spacing:-.2px;}
+.header-title span{color:var(--accent);}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.badge-running{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500;background:rgba(16,185,129,.15);color:#34d399;border:1px solid rgba(16,185,129,.25);}
+.main{padding-top:var(--header-h);}
+.page{display:none;padding:24px;max-width:1400px;margin:0 auto;}
+.page.active{display:block;}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px;}
+.stat-label{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:6px;}
+.stat-value{font-size:28px;font-weight:600;font-family:var(--mono);letter-spacing:-1px;}
+.stat-sub{font-size:11px;color:var(--muted);margin-top:4px;}
+.panel{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:16px;}
+.panel-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;font-weight:500;font-size:13px;}
+.contact-table,.hrd-table{width:100%;border-collapse:collapse;}
+.contact-table th,.hrd-table th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);padding:10px 14px;font-weight:500;border-bottom:1px solid var(--border);background:var(--bg2);}
+.contact-table td,.hrd-table td{padding:10px 14px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:12px;vertical-align:middle;}
+.contact-table tr:last-child td,.hrd-table tr:last-child td{border-bottom:none;}
+.contact-table tr:hover td,.hrd-table tr:hover td{background:var(--bg3);}
+.contact-table tr.new-row td{animation:flash 1s ease;}
+@keyframes flash{0%{background:rgba(59,130,246,.12);}100%{background:transparent;}}
+.callsign{font-weight:500;font-size:13px;}
+.freq-val{color:var(--accent);}
+.mode-badge{display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;background:rgba(59,130,246,.15);color:#93c5fd;border:1px solid rgba(59,130,246,.2);}
+.badge-source{padding:2px 7px;border-radius:4px;font-family:var(--mono);font-size:11px;font-weight:500;}
+.badge-wsjtx{background:rgba(139,92,246,.18);color:#a78bfa;}
+.badge-n1mm{background:rgba(6,182,212,.18);color:#67e8f9;}
+.badge-manuale{background:rgba(16,185,129,.18);color:#34d399;}
+.content-grid{display:grid;grid-template-columns:1fr 320px;gap:16px;}
+.overflow-x{overflow-x:auto;}
+.form-group{padding:14px 20px;border-bottom:1px solid var(--border);}
+.form-group:last-child{border-bottom:none;}
+.form-group label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:6px;}
+.form-group input,.form-group select,.form-group textarea{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);padding:7px 10px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none;transition:border-color .15s;}
+.form-group input:focus,.form-group select:focus{border-color:var(--accent);}
+.form-group .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.form-group select option{background:var(--bg2);}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:7px 14px;border-radius:var(--radius);font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text);transition:all .15s;font-family:inherit;}
+.btn:hover{background:var(--bg3);}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+.btn-primary:hover{background:#2563eb;}
+.btn-danger{color:#f87171;border-color:rgba(239,68,68,.3);}
+.btn-danger:hover{background:rgba(239,68,68,.1);}
+.btn-sm{padding:4px 10px;font-size:11px;}
+.btn-full{width:100%;margin-top:10px;}
+.log-area{background:var(--bg);font-family:var(--mono);font-size:11px;color:#64748b;padding:12px;height:160px;overflow-y:auto;line-height:1.8;}
+.log-area .log-ok{color:#34d399;}
+.log-area .log-err{color:#f87171;}
+.log-area .log-info{color:#60a5fa;}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:12px 16px;font-size:13px;display:none;gap:10px;align-items:center;z-index:999;box-shadow:0 8px 24px rgba(0,0,0,.4);}
+.toast.show{display:flex;animation:slideIn .25s ease;}
+@keyframes slideIn{from{transform:translateY(12px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.empty-state{padding:48px 24px;text-align:center;color:var(--muted);font-size:13px;}
+.empty-icon{font-size:32px;margin-bottom:12px;opacity:.4;}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.page-title{font-size:20px;font-weight:600;margin-bottom:4px;letter-spacing:-.3px;}
+.page-sub{font-size:13px;color:var(--muted);margin-bottom:24px;}
+.hint{font-size:11px;color:var(--muted);margin-top:4px;display:block;}
+.hint.ok{color:var(--green);}
+@media(max-width:900px){.stats-row{grid-template-columns:repeat(2,1fr);}.content-grid{grid-template-columns:1fr;}}
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+</head>
+<body>
+
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-logo"><i class="ti ti-radio" style="color:var(--accent);font-size:20px"></i>HRD <span>Bridge</span></div>
+  <div class="sidebar-nav">
+    <div class="nav-section">Navigazione</div>
+    <button class="nav-item active" onclick="goTo('dashboard')" id="nav-dashboard"><i class="ti ti-layout-dashboard"></i> Dashboard</button>
+    <button class="nav-item" onclick="goTo('hrdlog')" id="nav-hrdlog"><i class="ti ti-list"></i> Log HRDLog</button>
+    <button class="nav-item" onclick="goTo('qso')" id="nav-qso"><i class="ti ti-pencil-plus"></i> QSO Manuale</button>
+    <button class="nav-item" onclick="goTo('config')" id="nav-config"><i class="ti ti-settings"></i> Configurazione</button>
+  </div>
+  <div class="sidebar-footer">
+    <div class="hrd-pill"><span class="dot" id="hrd-dot"></span><span id="hrd-label">HRDLog: in attesa</span></div>
+  </div>
+</nav>
+
+<header class="header">
+  <button class="hamburger" onclick="toggleSidebar()" aria-label="Menu"><i class="ti ti-menu-2" style="font-size:18px"></i></button>
+  <div class="header-title">HRD <span>Bridge</span></div>
+  <div class="header-right"><span class="badge-running">● ATTIVO</span></div>
+</header>
+
+<main class="main">
+
+  <div class="page active" id="page-dashboard">
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-label">Inoltrati HRD</div><div class="stat-value" style="color:var(--accent)" id="s-fwd">0</div><div class="stat-sub">totale sessione</div></div>
+      <div class="stat-card"><div class="stat-label">WSJT-X / JS8Call</div><div class="stat-value" style="color:#a78bfa" id="s-wsjt">0</div><div class="stat-sub" id="p-wsjt">UDP :2237</div></div>
+      <div class="stat-card"><div class="stat-label">N1MM Logger</div><div class="stat-value" style="color:#67e8f9" id="s-n1mm">0</div><div class="stat-sub" id="p-n1mm">UDP :12060</div></div>
+      <div class="stat-card"><div class="stat-label">Errori HRD</div><div class="stat-value" style="color:#f87171" id="s-err">0</div><div class="stat-sub" id="s-last">—</div></div>
+    </div>
+    <div class="content-grid">
+      <div class="panel">
+        <div class="panel-header">
+          <div style="display:flex;align-items:center;gap:12px;">Contatti ricevuti
+            <span style="font-size:11px;color:var(--muted)">
+              <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#a78bfa;margin-right:4px;vertical-align:middle"></span>WSJT-X
+              <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#67e8f9;margin:0 4px 0 10px;vertical-align:middle"></span>N1MM
+              <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#34d399;margin:0 4px 0 10px;vertical-align:middle"></span>Manuale
+            </span>
+          </div>
+          <button class="btn btn-sm btn-danger" onclick="clearContacts()">Svuota</button>
+        </div>
+        <div class="overflow-x">
+          <table class="contact-table">
+            <thead><tr><th>Ora</th><th>Fonte</th><th>Callsign</th><th>Freq (MHz)</th><th>Modo</th><th>RST S/R</th><th>Grid</th><th>HRD</th></tr></thead>
+            <tbody id="contacts-body"><tr><td colspan="8" class="empty-state"><div class="empty-icon">📡</div>In attesa di contatti UDP...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <div>
+        <div class="panel"><div class="panel-header">Log attività</div>
+          <div class="log-area" id="log-area"><span class="log-info">[sistema] HRD Bridge avviato.</span><br></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page" id="page-hrdlog">
+    <div class="page-title">Log HRDLog.net</div>
+    <div class="page-sub">Ultimi QSO registrati sul tuo account HRDLog</div>
+    <div class="panel">
+      <div class="panel-header"><span>Ultimi QSO</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="number" id="hrd-limit" value="50" min="10" max="500" style="width:70px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);padding:4px 8px;color:var(--text);font-size:12px;outline:none;">
+          <button class="btn btn-sm btn-primary" onclick="loadHRDLog()"><i class="ti ti-refresh"></i> Aggiorna</button>
+        </div>
+      </div>
+      <div id="hrd-log-status" style="padding:12px 20px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--border);display:none;"></div>
+      <div class="overflow-x">
+        <table class="hrd-table">
+          <thead><tr><th>Data</th><th>Ora</th><th>Callsign</th><th>Banda</th><th>Modo</th><th>RST S</th><th>RST R</th><th>Nome</th></tr></thead>
+          <tbody id="hrd-log-body"><tr><td colspan="8" class="empty-state"><div class="empty-icon">🌐</div>Clicca "Aggiorna" per caricare il log da HRDLog.net</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="page" id="page-qso">
+    <div class="page-title">Inserimento QSO manuale</div>
+    <div class="page-sub">Aggiungi un contatto manualmente e inoltralo a HRDLog</div>
+    <div style="max-width:520px;">
+      <div class="panel">
+        <div class="panel-header">Dati QSO</div>
+        <div class="form-group"><label>Callsign *</label><input type="text" id="qso-call" placeholder="Es. IK1ABC" style="text-transform:uppercase"></div>
+        <div class="form-group"><label>Modo *</label><select id="qso-mode"><option value="SSB">SSB</option><option value="FT8" selected>FT8</option><option value="FT4">FT4</option><option value="CW">CW</option><option value="AM">AM</option><option value="FM">FM</option><option value="JS8">JS8</option><option value="RTTY">RTTY</option><option value="PSK31">PSK31</option><option value="DIGI">DIGI</option></select></div>
+        <div class="form-group"><label>Banda *</label><select id="qso-band"><option value="160m" data-freq="1.840">160m</option><option value="80m" data-freq="3.573">80m</option><option value="60m" data-freq="5.357">60m</option><option value="40m" data-freq="7.074">40m</option><option value="30m" data-freq="10.136">30m</option><option value="20m" data-freq="14.074" selected>20m</option><option value="17m" data-freq="18.100">17m</option><option value="15m" data-freq="21.074">15m</option><option value="12m" data-freq="24.915">12m</option><option value="10m" data-freq="28.074">10m</option><option value="6m" data-freq="50.313">6m</option><option value="2m" data-freq="144.174">2m</option><option value="70cm" data-freq="432.174">70cm</option></select></div>
+        <div class="form-group"><label>Frequenza (MHz) — opzionale</label><input type="number" id="qso-freq" placeholder="Auto dalla banda" step="0.001"><span class="hint">Lascia vuoto per usare la frequenza tipica della banda</span></div>
+        <div class="form-group"><label>RST Inviato / Ricevuto</label><div class="row2"><input type="text" id="qso-rst-s" placeholder="59" maxlength="3"><input type="text" id="qso-rst-r" placeholder="59" maxlength="3"></div></div>
+        <div class="form-group"><label>Data e ora UTC</label><input type="datetime-local" id="qso-datetime"></div>
+        <div class="form-group"><label>Grid (opzionale)</label><input type="text" id="qso-grid" placeholder="Es. JN45" style="text-transform:uppercase" maxlength="6"></div>
+        <div class="form-group"><label>Nome operatore (opzionale)</label><input type="text" id="qso-name" placeholder="Es. Mario"></div>
+        <div class="form-group"><label>Note (opzionale)</label><input type="text" id="qso-comment" placeholder="Note sul QSO"></div>
+        <div class="form-group">
+          <button class="btn btn-primary btn-full" onclick="submitManualQSO()"><i class="ti ti-send"></i> Invia a HRDLog</button>
+          <div id="qso-status" style="font-size:12px;margin-top:10px;text-align:center;color:var(--muted);min-height:18px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page" id="page-config">
+    <div class="page-title">Configurazione</div>
+    <div class="page-sub">Impostazioni HRDLog e porte UDP</div>
+    <div style="max-width:520px;">
+      <div class="panel">
+        <div class="panel-header"><i class="ti ti-world" style="margin-right:8px;font-size:16px"></i>HRDLog.net</div>
+        <div class="form-group"><label>Callsign</label><input type="text" id="cfg-hrd-user" placeholder="Es. IZ7XIB"></div>
+        <div class="form-group"><label>Password / Code</label><input type="password" id="cfg-hrd-pass" placeholder="••••••••••"><span class="hint" id="pass-hint"></span></div>
+      </div>
+      <div class="panel">
+        <div class="panel-header"><i class="ti ti-antenna" style="margin-right:8px;font-size:16px"></i>Porte UDP</div>
+        <div class="form-group"><label>WSJT-X / JS8Call</label><input type="number" id="cfg-wsjt-port" value="2237" min="1" max="65535"></div>
+        <div class="form-group"><label>N1MM Logger</label><input type="number" id="cfg-n1mm-port" value="12060" min="1" max="65535"></div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="saveConfig()" style="margin-top:4px;"><i class="ti ti-device-floppy"></i> Salva configurazione</button>
+      <div id="cfg-status" style="font-size:12px;color:var(--muted);margin-top:10px;text-align:center;min-height:18px;"></div>
+    </div>
+  </div>
+
+</main>
+
+<div class="toast" id="toast"><span id="toast-msg"></span></div>
+
+<script>
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('overlay').classList.toggle('show');}
+function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('show');}
+const pages=['dashboard','hrdlog','qso','config'];
+function goTo(page){pages.forEach(p=>{document.getElementById('page-'+p).classList.toggle('active',p===page);document.getElementById('nav-'+p).classList.toggle('active',p===page);});closeSidebar();if(page==='qso')initQSODatetime();if(page==='config')loadConfigForm();}
+function showToast(msg,ok=true){const t=document.getElementById('toast');document.getElementById('toast-msg').textContent=msg;t.style.borderColor=ok?'rgba(16,185,129,.4)':'rgba(239,68,68,.4)';t.className='toast show';setTimeout(()=>t.className='toast',2800);}
+function addLog(msg,type='info'){const area=document.getElementById('log-area');const line=document.createElement('span');line.className='log-'+type;line.textContent=`[${new Date().toLocaleTimeString('it-IT')}] ${msg}`;area.appendChild(line);area.appendChild(document.createElement('br'));area.scrollTop=area.scrollHeight;while(area.children.length>400)area.removeChild(area.firstChild);}
+function sourceTag(src){if(!src)return '';const s=src.toLowerCase();const cls=s.includes('n1mm')?'n1mm':s.includes('manuale')?'manuale':'wsjtx';return `<span class="badge-source badge-${cls}">${src}</span>`;}
+function modeTag(mode){return mode?`<span class="mode-badge">${mode}</span>`:'—';}
+let knownIds=new Set();let lastCount=0;
+function renderContacts(contacts){const tbody=document.getElementById('contacts-body');if(!contacts||contacts.length===0){tbody.innerHTML='<tr><td colspan="8" class="empty-state"><div class="empty-icon">📡</div>In attesa di contatti UDP...</td></tr>';knownIds.clear();lastCount=0;return;}const newIds=new Set(contacts.map(c=>c.id));const brandNew=contacts.filter(c=>!knownIds.has(c.id));knownIds=newIds;if(brandNew.length===0&&lastCount===contacts.length)return;lastCount=contacts.length;tbody.innerHTML=contacts.map(c=>{const isNew=brandNew.some(n=>n.id===c.id);return `<tr class="${isNew?'new-row':''}"><td>${c.received_at||'—'}</td><td>${sourceTag(c.source)}</td><td class="callsign">${c.callsign||'—'}</td><td class="freq-val">${c.freq_mhz?Number(c.freq_mhz).toFixed(4):'—'}</td><td>${modeTag(c.mode)}</td><td style="color:var(--muted)">${c.rst_sent||'—'}/${c.rst_rcvd||'—'}</td><td style="color:var(--muted)">${c.grid||'—'}</td><td><span style="color:var(--green);font-size:12px">✓</span></td></tr>`;}).join('');brandNew.forEach(c=>addLog(`QSO: ${c.callsign} ${c.mode||''} ${c.freq_mhz?Number(c.freq_mhz).toFixed(4)+' MHz':''} [${c.source}]`,'ok'));}
+function renderStats(stats,hrdConnected){document.getElementById('s-fwd').textContent=stats.hrd_forwarded||0;document.getElementById('s-wsjt').textContent=stats.wsjtx_received||0;document.getElementById('s-n1mm').textContent=stats.n1mm_received||0;document.getElementById('s-err').textContent=stats.hrd_errors||0;if(stats.last_contact)document.getElementById('s-last').textContent='Ultimo: '+stats.last_contact;const dot=document.getElementById('hrd-dot');const lbl=document.getElementById('hrd-label');if(hrdConnected){dot.className='dot ok';lbl.textContent='HRDLog: connesso';}else if(!stats.hrd_forwarded&&!stats.hrd_errors){dot.className='dot';lbl.textContent='HRDLog: in attesa';}else{dot.className='dot';lbl.textContent='HRDLog: errore';}}
+async function poll(){try{const res=await fetch('/api/state');if(!res.ok)return;const data=await res.json();renderContacts(data.contacts);renderStats(data.stats,data.hrd_connected);}catch(e){}}
+async function clearContacts(){await fetch('/api/clear',{method:'POST'});knownIds.clear();lastCount=0;addLog('Log contatti svuotato','info');poll();}
+async function loadHRDLog(){const limit=parseInt(document.getElementById('hrd-limit').value)||50;const status=document.getElementById('hrd-log-status');const tbody=document.getElementById('hrd-log-body');status.style.display='block';status.style.color='var(--muted)';status.innerHTML='<span class="spinner"></span> Caricamento da HRDLog.net...';tbody.innerHTML='<tr><td colspan="8" class="empty-state"><div class="spinner"></div></td></tr>';try{const res=await fetch(`/api/hrdlog?limit=${limit}`);const data=await res.json();if(data.error)throw new Error(data.error);status.style.color='var(--muted)';status.textContent=`${data.records.length} QSO caricati`;if(!data.records.length){tbody.innerHTML='<tr><td colspan="8" class="empty-state"><div class="empty-icon">📭</div>Nessun QSO trovato</td></tr>';return;}tbody.innerHTML=data.records.map(r=>`<tr><td>${r.date||'—'}</td><td style="color:var(--muted)">${r.time||'—'}</td><td class="callsign">${r.call||'—'}</td><td style="color:var(--accent)">${r.band||'—'}</td><td>${modeTag(r.mode)}</td><td style="color:var(--muted)">${r.rst_sent||'—'}</td><td style="color:var(--muted)">${r.rst_rcvd||'—'}</td><td style="color:var(--muted)">${r.name||'—'}</td></tr>`).join('');}catch(e){status.style.color='var(--danger)';status.textContent='✗ Errore: '+e.message;tbody.innerHTML='<tr><td colspan="8" class="empty-state"><div class="empty-icon">⚠️</div>'+e.message+'</td></tr>';}}
+function initQSODatetime(){const now=new Date();const pad=n=>String(n).padStart(2,'0');document.getElementById('qso-datetime').value=`${now.getUTCFullYear()}-${pad(now.getUTCMonth()+1)}-${pad(now.getUTCDate())}T${pad(now.getUTCHours())}:${pad(now.getUTCMinutes())}`;}
+async function submitManualQSO(){const call=document.getElementById('qso-call').value.trim().toUpperCase();const status=document.getElementById('qso-status');if(!call){status.style.color='var(--danger)';status.textContent='⚠ Callsign obbligatorio';return;}const dtVal=document.getElementById('qso-datetime').value;const datetime=dtVal?dtVal.replace('T',' ')+':00':new Date().toISOString().replace('T',' ').slice(0,19);const bandSel=document.getElementById('qso-band');const band=bandSel.value;const defaultFreq=parseFloat(bandSel.selectedOptions[0].dataset.freq)||0;const freqInput=parseFloat(document.getElementById('qso-freq').value);const freq=freqInput||defaultFreq;const qso={source:'MANUALE',callsign:call,mode:document.getElementById('qso-mode').value,freq_mhz:freq,band:band,rst_sent:document.getElementById('qso-rst-s').value.trim()||'59',rst_rcvd:document.getElementById('qso-rst-r').value.trim()||'59',datetime:datetime,grid:document.getElementById('qso-grid').value.trim().toUpperCase(),name:document.getElementById('qso-name').value.trim(),comments:document.getElementById('qso-comment').value.trim()};status.style.color='var(--muted)';status.innerHTML='<span class="spinner"></span> Invio in corso...';try{const res=await fetch('/api/qso',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(qso)});const d=await res.json();if(!d.ok)throw new Error(d.error||'Errore sconosciuto');status.style.color='var(--green)';status.textContent=`✓ QSO con ${call} inoltrato a HRDLog`;showToast(`QSO con ${call} inserito`);addLog(`QSO manuale: ${call} ${qso.mode} ${qso.freq_mhz?qso.freq_mhz.toFixed(3)+' MHz':''}`,'ok');['qso-call','qso-freq','qso-grid','qso-name','qso-comment','qso-rst-s','qso-rst-r'].forEach(id=>{document.getElementById(id).value='';});initQSODatetime();poll();}catch(e){status.style.color='var(--danger)';status.textContent='✗ '+e.message;showToast('Errore invio QSO',false);}}
+function loadConfigForm(){fetch('/api/config').then(r=>r.json()).then(cfg=>{document.getElementById('cfg-hrd-user').value=cfg.hrd_user||'';document.getElementById('cfg-hrd-pass').value=cfg.hrd_pass||'';document.getElementById('cfg-wsjt-port').value=cfg.wsjtx_port;document.getElementById('cfg-n1mm-port').value=cfg.n1mm_port;document.getElementById('p-wsjt').textContent=`UDP :${cfg.wsjtx_port}`;document.getElementById('p-n1mm').textContent=`UDP :${cfg.n1mm_port}`;if(cfg.hrd_user){document.getElementById('pass-hint').className='hint ok';document.getElementById('pass-hint').textContent='✓ Credenziali salvate';}}).catch(()=>{});}
+async function saveConfig(){const user=document.getElementById('cfg-hrd-user').value.trim();const pass=document.getElementById('cfg-hrd-pass').value.trim();const wsjtx=parseInt(document.getElementById('cfg-wsjt-port').value);const n1mm=parseInt(document.getElementById('cfg-n1mm-port').value);const status=document.getElementById('cfg-status');if(!user||!pass){status.style.color='var(--danger)';status.textContent='⚠ Inserisci callsign e password HRDLog';return;}try{const res=await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({hrd_user:user,hrd_pass:pass,wsjtx_port:wsjtx,n1mm_port:n1mm})});const d=await res.json();if(!d.ok)throw new Error(d.error);status.style.color='var(--green)';status.textContent='✓ Configurazione salvata';document.getElementById('pass-hint').className='hint ok';document.getElementById('pass-hint').textContent='✓ Credenziali salvate';document.getElementById('p-wsjt').textContent=`UDP :${wsjtx}`;document.getElementById('p-n1mm').textContent=`UDP :${n1mm}`;showToast('Configurazione salvata');addLog(`Config: HRDLog=${user} WSJT:${wsjtx} N1MM:${n1mm}`,'info');}catch(e){status.style.color='var(--danger)';status.textContent='✗ '+e.message;showToast('Errore salvataggio',false);}}
+loadConfigForm();poll();setInterval(poll,2000);
+</script>
+</body>
+</html>
