@@ -24,7 +24,7 @@ Include una dashboard web con monitoraggio in tempo reale, inserimento manuale d
 
 Se HRD Bridge ti è utile, puoi offrirmi un caffè per supportarne lo sviluppo:
 
-<a href="https://www.paypal.com/paypalme/TUO_USERNAME" target="_blank"><img src="https://img.shields.io/badge/PayPal-Dona-blue?logo=paypal&style=for-the-badge" alt="Dona con PayPal" height="40"></a>
+<a href="https://www.paypal.com/paypalme/FabioBratta" target="_blank"><img src="https://img.shields.io/badge/PayPal-Dona-blue?logo=paypal&style=for-the-badge" alt="Dona con PayPal" height="40"></a>
 
 ---
 
