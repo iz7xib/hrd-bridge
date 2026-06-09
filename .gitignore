@@ -1,0 +1,21 @@
+# Configurazione e dati runtime (sensibili)
+config.json
+qso_log.json
+
+# Build PyInstaller
+build/
+dist/
+*.spec.bak
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
